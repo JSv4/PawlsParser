@@ -1,0 +1,123 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pdftokenizer"
+dynamic = ["version"]
+description = ''
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "JSv4", email = "scrudato@umich.edu" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+  "pypdf",
+  "plasmapdf==0.1.1",
+  "pdfplumber==0.11.4",
+  "pytesseract==0.3.13",
+  "pdf2image==1.17.0",
+]
+
+[project.urls]
+Documentation = "https://github.com/JSv4/pdftokenizer#readme"
+Issues = "https://github.com/JSv4/pdftokenizer/issues"
+Source = "https://github.com/JSv4/pdftokenizer"
+
+[tool.hatch.version]
+path = "src/pdftokenizer/__about__.py"
+
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/pdftokenizer tests}"
+
+[tool.hatch.envs.lint]
+extra-dependencies = [
+  "ruff>=0.3.0",
+  "black>=24.2.0",
+]
+[tool.hatch.envs.lint.scripts]
+style = [
+    "black --check .",
+    "ruff check .",
+]
+fix = [
+    "black .",
+    "ruff check --fix .",
+]
+
+[tool.coverage.run]
+source_pkgs = ["pdftokenizer", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/pdftokenizer/__about__.py",
+]
+
+[tool.coverage.paths]
+pdftokenizer = ["src/pdftokenizer", "*/pdftokenizer/src/pdftokenizer"]
+tests = ["tests", "*/pdftokenizer/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "plasmapdf.*",
+    "pytesseract.*",
+    "pytest.*"
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120  # Match black's default line length
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "C",    # flake8-comprehensions
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "N",    # pep8-naming
+    "RUF",  # ruff-specific rules
+    "D",    # pydocstring
+]
+ignore = [
+    "D100",  # Missing docstring in public module
+    "D104",  # Missing docstring in public package
+    "D205"
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["D103"]  # Missing docstring in public function
+
+[tool.ruff.isort]
+known-first-party = ["pdftokenizer"]
+
+[tool.black]
+line-length = 120
+target-version = ["py310"]
+include = '\.pyi?$'
