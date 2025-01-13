@@ -6,6 +6,7 @@ import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
+import os
 
 from pypdf import PdfReader
 
@@ -44,7 +45,10 @@ def get_poppler_path() -> str | None:
     if sys.platform != "win32":
         return None
 
-    poppler_path = Path(__file__).parent / "poppler-windows" / "Library" / "bin"
+    # Define AppData location for Poppler
+    poppler_dir = Path.home() / 'AppData/Roaming/PDFTokenizer/poppler'
+    poppler_path = poppler_dir / "Library" / "bin"
+    
     if poppler_path.exists():
         return str(poppler_path)
 
@@ -52,69 +56,46 @@ def get_poppler_path() -> str | None:
 
 
 def setup_poppler_windows() -> str:
-    """Download and setup Poppler for Windows.
-
-    Returns:
-        str: Path to the Poppler binaries
-
-    Raises:
-        RuntimeError: If download or extraction fails
     """
+    Downloads and sets up Poppler for Windows in a temporary directory.
+    
+    Returns:
+        str: Path to the Poppler binaries directory
+    
+    Raises:
+        RuntimeError: If setup fails
+    """
+    temp_dir = tempfile.mkdtemp()
+    zip_path = os.path.join(temp_dir, "poppler.zip")
+    extract_dir = os.path.join(temp_dir, "extract")
+    
     try:
-        # Using the direct download URL for the zip file
-        poppler_url = (
-            "https://github.com/oschwartz10612/poppler-windows/releases/download/v24.08.0-0/Release-24.08.0-0.zip"
-        )
-
-        # Create a temporary directory for download and extraction
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_dir_path = Path(temp_dir)
-            zip_path = temp_dir_path / "poppler.zip"
-            extract_dir = temp_dir_path / "poppler"
-
-            # Create headers to mimic a browser request
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/91.0.4472.124 Safari/537.36"
-            }
-
-            # Download Poppler with proper headers
-            logger.info("Downloading Poppler for Windows...")
-            req = urllib.request.Request(poppler_url, headers=headers)
-
-            with (
-                urllib.request.urlopen(req) as response,
-                open(zip_path, "wb") as out_file,
-            ):
-                out_file.write(response.read())
-
-            # Extract the ZIP file to temp directory
-            logger.info(f"Extracting Poppler to temporary directory: {extract_dir}")
-            with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                zip_ref.extractall(extract_dir)
-
-            # Find the bin directory in the extracted contents
-            temp_bin_path = extract_dir / "Library" / "bin"
-            if not temp_bin_path.exists():
-                raise RuntimeError(f"Poppler binaries not found in temporary location: {temp_bin_path}")
-
-            # Move to final location
-            final_dir = Path(__file__).parent / "poppler-windows"
-            if final_dir.exists():
-                shutil.rmtree(final_dir)
-
-            logger.info(f"Moving Poppler to final location: {final_dir}")
-            shutil.copytree(extract_dir, final_dir)
-
-            final_bin_path = final_dir / "Library" / "bin"
-            if not final_bin_path.exists():
-                raise RuntimeError(f"Poppler binaries not found in final location: {final_bin_path}")
-
-            return str(final_bin_path)
-
-    except (urllib.error.URLError, urllib.error.HTTPError) as e:
-        raise RuntimeError(f"Failed to download Poppler: {e!s}") from e
-    except zipfile.BadZipFile as e:
-        raise RuntimeError("Downloaded file is not a valid ZIP file") from e
+        # Download Poppler
+        logger.info("Downloading Poppler for Windows...")
+        download_url = "https://github.com/oschwartz10612/poppler-windows/releases/download/v24.08.0-0/Release-24.08.0-0.zip"
+        urllib.request.urlretrieve(download_url, zip_path)
+        
+        # Extract ZIP
+        logger.info(f"Extracting ZIP file from {zip_path}")
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(extract_dir)
+            
+        # Find the bin directory
+        poppler_version_dir = next(d for d in os.listdir(extract_dir) if d.startswith('poppler-'))
+        bin_dir = os.path.join(extract_dir, poppler_version_dir, 'Library', 'bin')
+        
+        if not os.path.exists(bin_dir):
+            raise RuntimeError(f"Poppler binaries not found in temporary location: {bin_dir}")
+            
+        # Verify key executables exist
+        required_exes = ['pdftotext.exe', 'pdftoppm.exe']
+        for exe in required_exes:
+            if not os.path.exists(os.path.join(bin_dir, exe)):
+                raise RuntimeError(f"Required Poppler executable not found: {exe}")
+                
+        return bin_dir
+        
     except Exception as e:
-        raise RuntimeError(f"Failed to setup Poppler: {e!s}") from e
+        # Clean up temp dir on failure
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise RuntimeError(f"Failed to setup Poppler: {str(e)}")

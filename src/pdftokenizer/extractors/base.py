@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from io import BufferedReader, BytesIO
 
-from PIL.ImagePath import Path
+from pathlib import Path
 
 from ..types import PawlsPagePythonType
 

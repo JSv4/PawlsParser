@@ -29,10 +29,12 @@ def extract_tokens_from_pdf(pdf_bytes: bytes, force_ocr: bool = False) -> list[P
         poppler_path = get_poppler_path()
         logger.info(f"Using Poppler from: {poppler_path}")
 
-    needs_ocr = check_if_pdf_needs_ocr(pdf_bytes)
+    bytes_io = io.BytesIO(pdf_bytes)
+
+    needs_ocr = check_if_pdf_needs_ocr(bytes_io)
     logger.info(f"PDF needs OCR: {needs_ocr}")
 
     extractor = TesseractExtractor() if (needs_ocr or force_ocr) else PdfPlumberExtractor()
     logger.info(f"Using {extractor.__class__.__name__} to extract text and tokens")
 
-    return extractor.extract(io.BytesIO(pdf_bytes))
+    return extractor.extract(bytes_io)
