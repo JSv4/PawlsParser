@@ -1,1 +1,15 @@
 venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.py
+
+.ruff_cache
+.mypy_cache
+.pytest_cache
+.coverage
+
+

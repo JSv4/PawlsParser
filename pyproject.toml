@@ -60,12 +60,23 @@ fix = [
     "ruff check --fix .",
 ]
 
+[tool.hatch.envs.test]
+extra-dependencies = [
+  "pytest>=7.0.0",
+  "pytest-cov>=4.0.0",
+]
+[tool.hatch.envs.test.scripts]
+run = "pytest {args:tests}"
+cov = "pytest --cov {args:tests}"
+generate-fixtures = "python tests/generate_fixtures.py"
+
 [tool.coverage.run]
 source_pkgs = ["pdftokenizer", "tests"]
 branch = true
 parallel = true
 omit = [
   "src/pdftokenizer/__about__.py",
+  "tests/generate_fixtures.py",
 ]
 
 [tool.coverage.paths]
